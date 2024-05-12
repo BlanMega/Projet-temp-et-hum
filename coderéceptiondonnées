@@ -1,0 +1,62 @@
+<?php
+
+// Convertir les données JSON en tableau associatif PHP
+$data = json_decode($json, true);
+
+// Vérifier si les données ont été reçues
+if (!isset($data['temp']) || !isset($data['humidity'])) {
+    die("Données non reçues");
+}
+
+// Connexion à la base de données MySQL
+$servername = "localhost";
+$username = "root";
+$password = "root";
+$dbname = "temp_et_hum";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Vérifier la connexion
+if ($conn->connect_error) {
+    die("Connexion échouée : " . $conn->connect_error);
+}
+
+// Préparer la requête SQL
+$sql = "INSERT INTO donnees (temp, humidity) VALUES ('" . $data['temp'] . "', '" . $data['humidity'] . "')"; # Varie en fonction votre table de données
+// Préparer la requête
+$stmt = $conn->prepare($sql);
+
+// Lier les paramètres à la requête
+$stmt->bind_param("ss", $data['temp'], $data['humidity']);
+
+// Exécuter la requête
+if ($stmt->execute() === TRUE) {
+    echo "Données insérées avec succès !";
+} else {
+    echo "Erreur lors de l'insertion des données : " . $stmt->error;
+}
+
+// Préparer la requête SQL pour récupérer les données
+$stmt = $conn->prepare("SELECT * FROM donnees");
+
+// Exécuter la requête
+$stmt->execute();
+
+// Récupérer les résultats
+$result = $stmt->get_result();
+
+// Créer le début de la page HTML
+echo "<!DOCTYPE html><html><body><table>";
+
+// Parcourir les résultats et les afficher dans un tableau HTML
+while ($row = $result->fetch_assoc()) {
+    echo "<tr><td>" . $row["temp"] . "</td><td>" . $row["humidity"] . "</td></tr>";
+}
+
+// Fermer le tableau HTML et la page HTML
+echo "</table></body></html>";
+
+// Fermer la requête et la connexion
+$stmt->close();
+$conn->close();
+?>
