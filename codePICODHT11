@@ -1,0 +1,48 @@
+import network
+import utime
+import urequests
+from machine import Pin
+from dht import DHT11
+
+# Configuration du réseau Wi-Fi
+SSID = "" # depend de votre wifi
+PASSWORD = "" # depend de votre wifi
+
+# Configuration de l'URL de destination pour l'envoi des données
+URL = "http://192.168.0.42/MiniProjet/" # en correlation avec la page web que vous avez faite avant
+
+def connexion():
+    global vlan
+    vlan = network.WLAN(network.STA_IF)
+    vlan.active(True)
+    vlan.connect(SSID, PASSWORD)
+    while not vlan.isconnected():
+        print("Connexion en cours...")
+        utime.sleep(0.5)
+    print("Connexion OK!")
+
+connexion()
+
+sensor = DHT11(Pin(16))
+
+
+while True:
+    try:
+        temp = sensor.temperature
+        humidity = sensor.humidity
+        print("Temperature: {}°C   Humidity: {:.0f}% ".format(int(temp), humidity))
+        
+        # Envoi des données via POST
+        data = {"temperature": temp, "humidity": humidity}
+        headers = {"Content-Type": "application/json"}
+        response = urequests.post(URL, json=data, headers=headers)
+        
+        print("Données envoyées: ", response.text)
+        
+        response.close()
+        
+        utime.sleep(2)
+        
+    except Exception as e:
+        print("Erreur:", e)
+        utime.sleep(2)
